@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Simple
     Plus,
@@ -32,6 +32,7 @@ pub enum TokenType {
     Invalid,
 }
 
+#[derive(Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub index: usize,
