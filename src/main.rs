@@ -1,37 +1,36 @@
+use std::{env, fs};
+
 use ast::AstParser;
-use lexer::{Lexer, TokenType};
+use lexer::Lexer;
 
 pub mod ast;
 pub mod lexer;
 
 fn main() {
-    let example_program = r#"
-        var a = 0!
-        var b = 1!
-        var n = 0!
+    let args: Vec<String> = env::args().collect();
 
-        loop {
-            if(n == 10){
-                break!
-            }
+    if args.len() != 2 {
+        println!("Usage: trunkpp <file_path>");
+        return;
+    }
 
-            var c = a + b!
-            a = b!
-            b = c!
-            n = n + 1!
+    match fs::read_to_string(args[1].clone()) {
+        Ok(contents) => {
+            let mut lexer = Lexer::new(contents);
+            let tokens = lexer.tokenize();
+
+            match tokens {
+                Ok(tokens) => {
+                    let mut ast = AstParser::new(tokens.clone());
+                    println!("{:?}", ast.parse());
+                }
+                Err(err) => {
+                    println!("{}", err)
+                }
+            };
         }
-    "#;
-
-    let mut lexer = Lexer::new(example_program.to_string());
-    let tokens = lexer.tokenize();
-
-    match tokens {
-        Ok(tokens) => {
-            let mut ast = AstParser::new(tokens.clone());
-            println!("{:?}", ast.parse());
+        Err(_) => {
+            println!("Invalid file path supplied");
         }
-        Err(err) => {
-            println!("{}", err)
-        }
-    };
+    }
 }

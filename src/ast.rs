@@ -1,11 +1,6 @@
 use crate::lexer::Token;
 use crate::lexer::TokenType;
 
-// TODO:
-// Don't just panic, return errors
-// Clean up a lot of repeated and ugly af code
-// OPTIONAL IF TIME: Nice errors which actually show which line is at fault (for both ast and lexer)
-
 #[derive(Debug)]
 pub struct Ast {
     statements: Vec<Statement>,
@@ -76,6 +71,8 @@ impl AstParser {
     fn parse_print_statement(&mut self) -> Statement {
         let expression = self.parse_expression();
 
+        self.expect_bang();
+
         Statement::PrintStatement(expression)
     }
 
@@ -127,7 +124,7 @@ impl AstParser {
 
         let expression = self.parse_expression();
 
-        self.consume();
+        self.expect_bang();
 
         Statement::Assignment(identifier, expression)
     }
@@ -209,13 +206,7 @@ impl AstParser {
 
         let expression = Statement::VariableDeclaration(identifier, self.parse_expression());
 
-        if self
-            .peek()
-            .map_or(true, |token| token.token_type != TokenType::Bang)
-        {
-            panic!("Expected bang");
-        }
-        self.consume();
+        self.expect_bang();
 
         expression
     }
@@ -330,6 +321,16 @@ impl AstParser {
         } else {
             panic!("Expected an expression");
         }
+    }
+
+    fn expect_bang(&mut self) {
+        if self
+            .peek()
+            .map_or(true, |token| token.token_type != TokenType::Bang)
+        {
+            panic!("Expected bang (!)");
+        }
+        self.consume();
     }
 }
 
