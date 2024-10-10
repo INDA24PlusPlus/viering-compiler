@@ -2,7 +2,6 @@ use crate::lexer::Token;
 use crate::lexer::TokenType;
 
 // TODO:
-// Parse loops, break, print, assignment, etc
 // Don't just panic, return errors
 // Clean up a lot of repeated and ugly af code
 // OPTIONAL IF TIME: Nice errors which actually show which line is at fault (for both ast and lexer)
@@ -30,7 +29,6 @@ impl AstParser {
         if let Some(token) = self.tokens.get(self.index + amount) {
             return Some(token);
         }
-
         None
     }
 
@@ -57,9 +55,15 @@ impl AstParser {
         self.consume();
 
         match next_token_type {
+            TokenType::Break => {
+                self.consume();
+                Statement::BreakStatement
+            }
+            TokenType::Identifier(identifier) => self.parse_assignment(identifier),
+            TokenType::Loop => self.parse_loop(),
             TokenType::Var => self.parse_variable_declaration(),
-            TokenType::Break => Statement::BreakStatement,
             TokenType::If => self.parse_if_statement(),
+            TokenType::Print => self.parse_print_statement(),
             _ => {
                 panic!(
                     "Unexpected statement, began with token type {:?}",
@@ -67,6 +71,65 @@ impl AstParser {
                 );
             }
         }
+    }
+
+    fn parse_print_statement(&mut self) -> Statement {
+        let expression = self.parse_expression();
+
+        Statement::PrintStatement(expression)
+    }
+
+    fn parse_loop(&mut self) -> Statement {
+        // Opening bracket
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad loop: Expected opening bracket");
+        });
+
+        match &next_token.token_type {
+            TokenType::OpenBrace => {}
+            _ => panic!("Bad loop : loop{{<statements>}}"),
+        };
+        self.consume();
+
+        // Parse the block of statements
+        let mut statements: Vec<Statement> = Vec::new();
+        while let Some(token) = self.peek() {
+            if token.token_type == TokenType::CloseBrace {
+                break;
+            }
+            statements.push(self.parse_statement());
+        }
+
+        // Closing bracket
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad loop : loop{{<statements>}}");
+        });
+        match &next_token.token_type {
+            TokenType::CloseBrace => {}
+            _ => panic!("Bad loop : Expected closing bracket"),
+        };
+        self.consume();
+
+        Statement::LoopStatement(statements)
+    }
+
+    fn parse_assignment(&mut self, identifier: String) -> Statement {
+        // Identifier
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad assignment: <identifier> = <expression>!");
+        });
+
+        match &next_token.token_type {
+            TokenType::Equal => {}
+            _ => panic!("Bad assignment: expected '='"),
+        };
+        self.consume();
+
+        let expression = self.parse_expression();
+
+        self.consume();
+
+        Statement::Assignment(identifier, expression)
     }
 
     fn parse_if_statement(&mut self) -> Statement {

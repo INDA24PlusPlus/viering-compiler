@@ -6,9 +6,19 @@ pub mod lexer;
 
 fn main() {
     let example_program = r#"
-        var balls = (balls + 4) * 2 + 4 * 5!
-        if(balls == 2) {
-            var balls = 10!
+        var a = 0!
+        var b = 1!
+        var n = 0!
+
+        loop {
+            if(n == 10){
+                break!
+            }
+
+            var c = a + b!
+            a = b!
+            b = c!
+            n = n + 1!
         }
     "#;
 
@@ -19,15 +29,6 @@ fn main() {
         Ok(tokens) => {
             let mut ast = AstParser::new(tokens.clone());
             println!("{:?}", ast.parse());
-
-            for token in tokens.iter() {
-                print!("{:?} ", token.token_type);
-
-                if token.token_type == TokenType::Bang {
-                    println!();
-                }
-            }
-            println!();
         }
         Err(err) => {
             println!("{}", err)

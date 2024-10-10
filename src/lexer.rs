@@ -23,6 +23,7 @@ pub enum TokenType {
 
     // Keywords
     Var,
+    Print,
     If,
     Previous, // TODO if i have time
     Loop,
@@ -115,6 +116,7 @@ impl Lexer {
 
                     token.token_type = match data.as_str() {
                         "if" => TokenType::If,
+                        "print" => TokenType::Print,
                         "prev" => TokenType::Previous,
                         "loop" => TokenType::Loop,
                         "break" => TokenType::Break,
