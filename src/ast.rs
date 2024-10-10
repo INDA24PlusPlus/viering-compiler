@@ -272,13 +272,14 @@ impl AstParser {
 
         while let Some(token) = self.peek().cloned() {
             match token.token_type {
-                TokenType::EqualEqual => {
+                TokenType::EqualEqual | TokenType::SemicolonEqual => {
                     self.consume();
                     let right = self.parse_primary();
                     left = Expression::BinaryOperation(
                         Box::new(left),
                         match token.token_type {
                             TokenType::EqualEqual => BinaryOperator::Equal,
+                            TokenType::SemicolonEqual => BinaryOperator::NotEqual,
                             _ => unreachable!(),
                         },
                         Box::new(right),
@@ -349,6 +350,7 @@ pub enum BinaryOperator {
     Multiply,
     Divide,
     Equal,
+    NotEqual,
     Compare,
 }
 
