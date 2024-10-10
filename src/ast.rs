@@ -2,8 +2,9 @@ use crate::lexer::Token;
 use crate::lexer::TokenType;
 
 // TODO:
-// Parse loops, break, print, if statements, etc
+// Parse loops, break, print, assignment, etc
 // Don't just panic, return errors
+// Clean up a lot of repeated and ugly af code
 // OPTIONAL IF TIME: Nice errors which actually show which line is at fault (for both ast and lexer)
 
 #[derive(Debug)]
@@ -43,20 +44,85 @@ impl AstParser {
         };
 
         while self.index < self.tokens.len() {
-            let next_token_type = self.tokens[self.index].token_type.clone();
-
-            self.consume();
-
-            let statement = match next_token_type {
-                TokenType::Var => self.parse_variable_declaration(),
-                _ => {
-                    panic!("Token type not handled {}", self.index);
-                }
-            };
+            let statement = self.parse_statement();
             ast.statements.push(statement);
         }
 
         ast
+    }
+
+    fn parse_statement(&mut self) -> Statement {
+        let next_token_type = self.tokens[self.index].token_type.clone();
+
+        self.consume();
+
+        match next_token_type {
+            TokenType::Var => self.parse_variable_declaration(),
+            TokenType::Break => Statement::BreakStatement,
+            TokenType::If => self.parse_if_statement(),
+            _ => {
+                panic!(
+                    "Unexpected statement, began with token type {:?}",
+                    next_token_type
+                );
+            }
+        }
+    }
+
+    fn parse_if_statement(&mut self) -> Statement {
+        // Opening parenthesis
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad if statement: if(<condition>){{<statements>}}");
+        });
+        match &next_token.token_type {
+            TokenType::OpenParen => {}
+            _ => panic!("Bad if statement: Expected open parenthesis"),
+        };
+        self.consume();
+
+        // Parse expression
+        let condition = self.parse_expression();
+
+        // Closing parenthesis
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad if statement: if(<condition>){{<statements>}}");
+        });
+        match &next_token.token_type {
+            TokenType::CloseParen => {}
+            _ => panic!("Bad if statement: Expected closing parenthesis"),
+        };
+        self.consume();
+
+        // Opening bracket
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad if statement: if(<condition>){{<statements>}}");
+        });
+        match &next_token.token_type {
+            TokenType::OpenBrace => {}
+            _ => panic!("Bad if statement: Expected opening bracket"),
+        };
+        self.consume();
+
+        // Parse the block of statements
+        let mut statements: Vec<Statement> = Vec::new();
+        while let Some(token) = self.peek() {
+            if token.token_type == TokenType::CloseBrace {
+                break;
+            }
+            statements.push(self.parse_statement());
+        }
+
+        // Closing bracket
+        let next_token = self.peek().cloned().unwrap_or_else(|| {
+            panic!("Bad if statement: if(<condition>){{<statements>}}");
+        });
+        match &next_token.token_type {
+            TokenType::CloseBrace => {}
+            _ => panic!("Bad if statement: Expected closing bracket"),
+        };
+        self.consume();
+
+        Statement::IfStatement(condition, statements)
     }
 
     fn parse_variable_declaration(&mut self) -> Statement {
@@ -123,7 +189,7 @@ impl AstParser {
 
     fn parse_mult_div_expression(&mut self) -> Expression {
         // Parse identifiers / integers / parenthesis first
-        let mut left = self.parse_primary();
+        let mut left = self.parse_comparision_expression();
 
         while let Some(token) = self.peek().cloned() {
             match token.token_type {
@@ -135,6 +201,30 @@ impl AstParser {
                         match token.token_type {
                             TokenType::Star => BinaryOperator::Multiply,
                             TokenType::Slash => BinaryOperator::Divide,
+                            _ => unreachable!(),
+                        },
+                        Box::new(right),
+                    );
+                }
+                _ => break,
+            }
+        }
+
+        left
+    }
+
+    fn parse_comparision_expression(&mut self) -> Expression {
+        let mut left = self.parse_primary();
+
+        while let Some(token) = self.peek().cloned() {
+            match token.token_type {
+                TokenType::EqualEqual => {
+                    self.consume();
+                    let right = self.parse_primary();
+                    left = Expression::BinaryOperation(
+                        Box::new(left),
+                        match token.token_type {
+                            TokenType::EqualEqual => BinaryOperator::Equal,
                             _ => unreachable!(),
                         },
                         Box::new(right),
