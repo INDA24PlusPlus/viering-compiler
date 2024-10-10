@@ -16,7 +16,7 @@ impl Ast {
     fn print_statement(statement: &Statement, indentation: usize) {
         match statement {
             Statement::LoopStatement(statements) => {
-                println!("Loop:");
+                Self::print_indented("Loop:".to_string(), indentation);
                 for statement in statements {
                     Self::print_statement(statement, indentation + 1);
                 }
