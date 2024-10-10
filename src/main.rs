@@ -21,8 +21,10 @@ fn main() {
 
             match tokens {
                 Ok(tokens) => {
-                    let mut ast = AstParser::new(tokens.clone());
-                    println!("{:?}", ast.parse());
+                    let mut ast_parser = AstParser::new(tokens.clone());
+                    let ast = ast_parser.parse();
+
+                    ast.print();
                 }
                 Err(err) => {
                     println!("{}", err)

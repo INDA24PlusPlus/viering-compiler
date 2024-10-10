@@ -6,6 +6,39 @@ pub struct Ast {
     statements: Vec<Statement>,
 }
 
+impl Ast {
+    pub fn print(&self) {
+        for statement in self.statements.iter() {
+            Self::print_statement(statement, 0);
+        }
+    }
+
+    fn print_statement(statement: &Statement, indentation: usize) {
+        match statement {
+            Statement::LoopStatement(statements) => {
+                println!("Loop:");
+                for statement in statements {
+                    Self::print_statement(statement, indentation + 1);
+                }
+            }
+            Statement::IfStatement(expression, statements) => {
+                Self::print_indented("If:".to_string(), indentation);
+                Self::print_indented(format!("{:?}", expression), indentation + 1);
+
+                Self::print_indented("Then:".to_string(), indentation);
+                for statement in statements {
+                    Self::print_statement(statement, indentation + 1);
+                }
+            }
+            _ => Self::print_indented(format!("{:?}", statement), indentation),
+        };
+    }
+
+    fn print_indented(to_print: String, indentation: usize) {
+        println!("{}{}", " ".repeat(indentation * 4), to_print);
+    }
+}
+
 pub struct AstParser {
     tokens: Vec<Token>,
     index: usize,
