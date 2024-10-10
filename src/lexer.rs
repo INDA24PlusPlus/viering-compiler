@@ -18,13 +18,13 @@ pub enum TokenType {
     SemicolonEqual,
     Identifier(String),
     Integer(i64),
-    Bool(bool),
-    String(String),
+    Bool(bool),     // TODO if i have time
+    String(String), // TODO if i have time
 
     // Keywords
     Var,
     If,
-    Previous,
+    Previous, // TODO if i have time
     Loop,
     Break,
 
@@ -32,7 +32,7 @@ pub enum TokenType {
     Invalid,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TokenType,
     pub index: usize,

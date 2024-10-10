@@ -6,13 +6,7 @@ pub mod lexer;
 
 fn main() {
     let example_program = r#"
-        var balls = 0!
-        var test_5 = 0!
-        var balls = test_5 * 4 - 4 + 2!
-        
-        if balls == 10 {
-            print(test_5)!
-        }
+        var balls = (balls + 4) * 2 + 4 * 5!
     "#;
 
     let mut lexer = Lexer::new(example_program.to_string());
