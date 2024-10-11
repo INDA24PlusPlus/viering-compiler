@@ -1,14 +1,16 @@
-loop  {
-break!
+break!if ( BD9 ){
+loop   {
+if  ( G*12 ){
 loop {
-loop {
-if ( 9-S*r ){
 break!
-if ( 6*60 ){
-print 871+2!
+print 3!
 }
 }
-print a!
 }
+loop   {
+print 8-d!
+var   p   = R5!
 }
+}if ( w   ){
+var m = y_!
 }

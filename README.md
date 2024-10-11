@@ -5,8 +5,10 @@ Very revolutionary features!! as well check examples to be amazed
 
 ## BNF
 ```
+<program> ::= <statement>+
+
+<statement> ::= <if_statement> | "break" "!" | <print_statement> | <loop_statement> | <assignment>
 <assignment> ::= "var" <whitespace> <identifier> <whitespace> "=" <whitespace> <expression> "!"
-<statement> ::= <if_statement> | "break" "!" | <print_statement> | <loop_statement>
 <print_statement> ::= "print" <whitespace> <expression> "!"
 <if_statement> ::= "if" <whitespace> "(" <whitespace> <expression> <whitespace> "){\n" <statement_block> "\n}"
 <loop_statement> ::= "loop" <whitespace> "{\n" <statement_block> "\n}"
