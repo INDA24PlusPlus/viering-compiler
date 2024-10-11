@@ -1,12 +1,13 @@
-# trunkplusplus
+# trunk++
 Very nice programming language maybe bit inspired by the dreamberd
+Very revolutionary features!! as well check examples to be amazed
 
 
 ## BNF
 ```
 <assignment> ::= "var" <whitespace> <identifier> <whitespace> "=" <whitespace> <expression> "!"
 <statement> ::= <if_statement> | "break" "!" | <print_statement> | <loop_statement>
-<print_statement> ::= "print" " " <expression> "!"
+<print_statement> ::= "print" <whitespace> <expression> "!"
 <if_statement> ::= "if" <whitespace> "(" <whitespace> <expression> <whitespace> "){\n" <statement_block> "\n}"
 <loop_statement> ::= "loop" <whitespace> "{\n" <statement_block> "\n}"
 
