@@ -14,7 +14,7 @@ Very revolutionary features!! as well check examples to be amazed
 <loop_statement> ::= "loop" <whitespace> "{\n" <statement_block> "\n}"
 
 <statement_block> ::= <statement> | <statement> "\n" <statement>
-<expression> ::= <identifier> | <number> | <expression> <operator> <expression>
+<expression> ::= <identifier> | <number> | <expression> <operator> <expression> | "(" <expression> ")"
 
 <identifier> ::= <letter> | <letter> <identifier_tail>
 <identifier_tail> ::= <letter_or_underscore_or_digit> | <identifier_tail> <letter_or_underscore_or_digit>
