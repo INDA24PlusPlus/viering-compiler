@@ -44,7 +44,6 @@ impl Transpiler {
                         BinaryOperator::Subtract => "-",
                         BinaryOperator::Multiply => "*",
                         BinaryOperator::Divide => "/",
-                        BinaryOperator::Compare => "==", // TODO what the fuck is this?
                         BinaryOperator::Equal => "==",
                         BinaryOperator::NotEqual => "!=",
                     },
@@ -93,7 +92,6 @@ impl Transpiler {
                 let mut new_code = String::new();
                 new_code += "if(";
                 new_code += &Self::compile_expression(condition);
-                new_code += "";
                 new_code += "){\n";
 
                 for statement in statements.iter() {

@@ -1,7 +1,7 @@
 use crate::lexer::Token;
 use crate::lexer::TokenType;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ast {
     pub statements: Vec<Statement>,
 }
@@ -13,6 +13,7 @@ impl Ast {
         }
     }
 
+    // kinda pretty prints the ast (enough to be readable at least)
     fn print_statement(statement: &Statement, indentation: usize) {
         match statement {
             Statement::LoopStatement(statements) => {
@@ -368,7 +369,7 @@ impl AstParser {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Integer(i64),
     Variable(String),
@@ -376,7 +377,7 @@ pub enum Expression {
     ParenthesisExpression(Box<Expression>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOperator {
     Add,
     Subtract,
@@ -384,10 +385,9 @@ pub enum BinaryOperator {
     Divide,
     Equal,
     NotEqual,
-    Compare,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     VariableDeclaration(String, Expression),
     Assignment(String, Expression),

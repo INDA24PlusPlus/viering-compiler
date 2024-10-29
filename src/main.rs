@@ -2,10 +2,12 @@ use std::{env, fs};
 
 use ast::AstParser;
 use lexer::Lexer;
+use semantic::Semantic;
 use transpiler::Transpiler;
 
 pub mod ast;
 pub mod lexer;
+pub mod semantic;
 pub mod transpiler;
 
 fn main() {
@@ -25,6 +27,14 @@ fn main() {
                 Ok(tokens) => {
                     let mut ast_parser = AstParser::new(tokens.clone());
                     let ast = ast_parser.parse();
+
+                    match Semantic::new(ast.clone()).check() {
+                        Ok(()) => {}
+                        Err(err) => {
+                            println!("Error during semantic analysis: {}", err);
+                            return;
+                        }
+                    }
 
                     let transpiler = Transpiler::new();
                     println!("{}", transpiler.compile(ast));
