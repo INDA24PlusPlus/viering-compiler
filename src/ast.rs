@@ -3,7 +3,7 @@ use crate::lexer::TokenType;
 
 #[derive(Debug)]
 pub struct Ast {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 impl Ast {

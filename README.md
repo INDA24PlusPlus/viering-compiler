@@ -1,6 +1,55 @@
 # trunk++
 Very nice programming language maybe bit inspired by the dreamberd
-Very revolutionary features!! as well check examples to be amazed
+
+Very revolutionary features!! as well check examples to be amazed (rip there is nothing to be amazed of :joy:)
+
+## Example fibonacci program
+Trunk++:
+```
+var a = 0!
+var b = 1!
+var n = 0!
+
+loop {
+    if(n == 10){
+        break!
+    }
+
+    print b!
+
+    var c = a + b!
+    a = b!
+    b = c!
+    n = n + 1!
+}
+```
+
+
+C:
+```
+#include <stdio.h>
+
+int main(){
+    int a = 0;
+    int b = 1;
+    int n = 0;
+
+    while(1){
+        if(n == 10){
+            break;
+        }
+
+        printf("%d\n", b);
+
+        int c = a + b;
+        a = b;
+        b = c;
+        n = n + 1;
+    }
+
+    return 0;
+}
+```
 
 
 ## BNF
