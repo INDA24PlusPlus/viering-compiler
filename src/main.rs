@@ -26,7 +26,13 @@ fn main() {
             match tokens {
                 Ok(tokens) => {
                     let mut ast_parser = AstParser::new(tokens.clone());
-                    let ast = ast_parser.parse();
+                    let ast = match ast_parser.parse() {
+                        Ok(ast) => ast,
+                        Err(err) => {
+                            println!("Error during ast construction: {}", err);
+                            return;
+                        }
+                    };
 
                     match Semantic::new(ast.clone()).check() {
                         Ok(()) => {}

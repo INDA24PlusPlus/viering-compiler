@@ -1,5 +1,42 @@
+use core::fmt;
+
 use crate::lexer::Token;
 use crate::lexer::TokenType;
+
+#[derive(Debug)]
+pub enum AstError {
+    UnexpectedStatement(TokenType),
+    BadAssignment(String),
+    BadLoop,
+    BadVariableDeclaration,
+    ExpectedBang,
+    BadIfStatement,
+    UnexpectedToken(TokenType),
+    ExpectedClosingParenthesis,
+    ExpectedExpression,
+}
+
+impl fmt::Display for AstError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AstError::UnexpectedStatement(token_type) => write!(
+                f,
+                "Unexpected statement, began with token type {:?}",
+                token_type
+            ),
+            AstError::BadAssignment(identifier) => write!(f, "Bad assignment for {}", identifier),
+            AstError::BadLoop => write!(f, "Bad loop"),
+            AstError::BadVariableDeclaration => write!(f, "Bad variable declaration"),
+            AstError::ExpectedBang => write!(f, "Expected bang"),
+            AstError::BadIfStatement => write!(f, "Bad if statement"),
+            AstError::UnexpectedToken(token_type) => {
+                write!(f, "Unexpected token of type {:?}", token_type)
+            }
+            AstError::ExpectedClosingParenthesis => write!(f, "Expected closing parenthesis"),
+            AstError::ExpectedExpression => write!(f, "Expected an expression"),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Ast {
@@ -65,20 +102,20 @@ impl AstParser {
         self.index += 1;
     }
 
-    pub fn parse(&mut self) -> Ast {
+    pub fn parse(&mut self) -> Result<Ast, AstError> {
         let mut ast = Ast {
             statements: Vec::new(),
         };
 
         while self.index < self.tokens.len() {
-            let statement = self.parse_statement();
+            let statement = self.parse_statement()?;
             ast.statements.push(statement);
         }
 
-        ast
+        Ok(ast)
     }
 
-    fn parse_statement(&mut self) -> Statement {
+    fn parse_statement(&mut self) -> Result<Statement, AstError> {
         let next_token_type = self.tokens[self.index].token_type.clone();
 
         self.consume();
@@ -86,39 +123,35 @@ impl AstParser {
         match next_token_type {
             TokenType::Break => {
                 self.consume();
-                Statement::BreakStatement
+                Ok(Statement::BreakStatement)
             }
             TokenType::Identifier(identifier) => self.parse_assignment(identifier),
             TokenType::Loop => self.parse_loop(),
             TokenType::Var => self.parse_variable_declaration(),
             TokenType::If => self.parse_if_statement(),
             TokenType::Print => self.parse_print_statement(),
-            _ => {
-                panic!(
-                    "Unexpected statement, began with token type {:?}",
-                    next_token_type
-                );
-            }
+            _ => Err(AstError::UnexpectedStatement(next_token_type)),
         }
     }
 
-    fn parse_print_statement(&mut self) -> Statement {
-        let expression = self.parse_expression();
+    fn parse_print_statement(&mut self) -> Result<Statement, AstError> {
+        let expression = self.parse_expression()?;
 
-        self.expect_bang();
+        self.expect_bang()?;
 
-        Statement::PrintStatement(expression)
+        Ok(Statement::PrintStatement(expression))
     }
 
-    fn parse_loop(&mut self) -> Statement {
+    fn parse_loop(&mut self) -> Result<Statement, AstError> {
         // Opening bracket
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad loop: Expected opening bracket");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadLoop),
+        };
 
         match &next_token.token_type {
             TokenType::OpenBrace => {}
-            _ => panic!("Bad loop : loop{{<statements>}}"),
+            _ => return Err(AstError::BadLoop),
         };
         self.consume();
 
@@ -128,72 +161,82 @@ impl AstParser {
             if token.token_type == TokenType::CloseBrace {
                 break;
             }
-            statements.push(self.parse_statement());
+            statements.push(self.parse_statement()?);
         }
 
         // Closing bracket
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad loop : loop{{<statements>}}");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadLoop),
+        };
+
         match &next_token.token_type {
             TokenType::CloseBrace => {}
-            _ => panic!("Bad loop : Expected closing bracket"),
+            _ => return Err(AstError::BadLoop),
         };
         self.consume();
 
-        Statement::LoopStatement(statements)
+        Ok(Statement::LoopStatement(statements))
     }
 
-    fn parse_assignment(&mut self, identifier: String) -> Statement {
+    fn parse_assignment(&mut self, identifier: String) -> Result<Statement, AstError> {
         // Identifier
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad assignment: <identifier> = <expression>!");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadAssignment(identifier)),
+        };
 
         match &next_token.token_type {
             TokenType::Equal => {}
-            _ => panic!("Bad assignment: expected '='"),
+            _ => return Err(AstError::BadAssignment(identifier)),
         };
         self.consume();
 
-        let expression = self.parse_expression();
+        let expression = self.parse_expression()?;
 
-        self.expect_bang();
+        self.expect_bang()?;
 
-        Statement::Assignment(identifier, expression)
+        Ok(Statement::Assignment(identifier, expression))
     }
 
-    fn parse_if_statement(&mut self) -> Statement {
+    fn parse_if_statement(&mut self) -> Result<Statement, AstError> {
         // Opening parenthesis
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad if statement: if(<condition>){{<statements>}}");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadIfStatement),
+        };
+
         match &next_token.token_type {
             TokenType::OpenParen => {}
-            _ => panic!("Bad if statement: Expected open parenthesis"),
+            _ => return Err(AstError::BadIfStatement),
         };
+
         self.consume();
 
         // Parse expression
-        let condition = self.parse_expression();
+        let condition = self.parse_expression()?;
 
         // Closing parenthesis
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad if statement: if(<condition>){{<statements>}}");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadIfStatement),
+        };
+
         match &next_token.token_type {
             TokenType::CloseParen => {}
-            _ => panic!("Bad if statement: Expected closing parenthesis"),
+            _ => return Err(AstError::BadIfStatement),
         };
         self.consume();
 
         // Opening bracket
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad if statement: if(<condition>){{<statements>}}");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadIfStatement),
+        };
+
         match &next_token.token_type {
             TokenType::OpenBrace => {}
-            _ => panic!("Bad if statement: Expected opening bracket"),
+            _ => return Err(AstError::BadIfStatement),
         };
         self.consume();
 
@@ -203,61 +246,65 @@ impl AstParser {
             if token.token_type == TokenType::CloseBrace {
                 break;
             }
-            statements.push(self.parse_statement());
+            statements.push(self.parse_statement()?);
         }
 
         // Closing bracket
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad if statement: if(<condition>){{<statements>}}");
-        });
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadIfStatement),
+        };
+
         match &next_token.token_type {
             TokenType::CloseBrace => {}
-            _ => panic!("Bad if statement: Expected closing bracket"),
+            _ => return Err(AstError::BadIfStatement),
         };
         self.consume();
 
-        Statement::IfStatement(condition, statements)
+        Ok(Statement::IfStatement(condition, statements))
     }
 
-    fn parse_variable_declaration(&mut self) -> Statement {
-        let next_token = self.peek().cloned().unwrap_or_else(|| {
-            panic!("Bad variable declaration: var (<identifier>)");
-        });
+    fn parse_variable_declaration(&mut self) -> Result<Statement, AstError> {
+        let next_token = match self.peek().cloned() {
+            Some(token) => token,
+            None => return Err(AstError::BadVariableDeclaration),
+        };
+
         self.consume();
 
         let identifier = match &next_token.token_type {
             TokenType::Identifier(name) => name.to_string(),
-            _ => panic!("Bad variable declaration: var (<identifier>)"),
+            _ => return Err(AstError::BadVariableDeclaration),
         };
 
         if self
             .peek()
             .map_or(true, |token| token.token_type != TokenType::Equal)
         {
-            panic!("Bad variable declaration: var <identifier> (=)");
+            return Err(AstError::BadVariableDeclaration);
         }
         self.consume();
 
-        let expression = Statement::VariableDeclaration(identifier, self.parse_expression());
+        let expression = Statement::VariableDeclaration(identifier, self.parse_expression()?);
 
-        self.expect_bang();
+        self.expect_bang()?;
 
-        expression
+        Ok(expression)
     }
 
-    fn parse_expression(&mut self) -> Expression {
-        self.parse_add_sub_expression()
+    fn parse_expression(&mut self) -> Result<Expression, AstError> {
+        Ok(self.parse_add_sub_expression()?)
     }
 
-    fn parse_add_sub_expression(&mut self) -> Expression {
+    fn parse_add_sub_expression(&mut self) -> Result<Expression, AstError> {
         // Multiplication and division has higher priority
-        let mut left = self.parse_mult_div_expression();
+        let mut left = self.parse_mult_div_expression()?;
 
         while let Some(token) = self.peek().cloned() {
             match token.token_type {
                 TokenType::Plus | TokenType::Minus => {
                     self.consume();
-                    let right = self.parse_mult_div_expression();
+                    let right = self.parse_mult_div_expression()?;
                     left = Expression::BinaryOperation(
                         Box::new(left),
                         match token.token_type {
@@ -272,18 +319,18 @@ impl AstParser {
             }
         }
 
-        left
+        Ok(left)
     }
 
-    fn parse_mult_div_expression(&mut self) -> Expression {
+    fn parse_mult_div_expression(&mut self) -> Result<Expression, AstError> {
         // Parse identifiers / integers / parenthesis first
-        let mut left = self.parse_comparision_expression();
+        let mut left = self.parse_comparision_expression()?;
 
         while let Some(token) = self.peek().cloned() {
             match token.token_type {
                 TokenType::Star | TokenType::Slash => {
                     self.consume();
-                    let right = self.parse_primary();
+                    let right = self.parse_primary()?;
                     left = Expression::BinaryOperation(
                         Box::new(left),
                         match token.token_type {
@@ -298,17 +345,17 @@ impl AstParser {
             }
         }
 
-        left
+        Ok(left)
     }
 
-    fn parse_comparision_expression(&mut self) -> Expression {
-        let mut left = self.parse_primary();
+    fn parse_comparision_expression(&mut self) -> Result<Expression, AstError> {
+        let mut left = self.parse_primary()?;
 
         while let Some(token) = self.peek().cloned() {
             match token.token_type {
                 TokenType::EqualEqual | TokenType::SemicolonEqual => {
                     self.consume();
-                    let right = self.parse_primary();
+                    let right = self.parse_primary()?;
                     left = Expression::BinaryOperation(
                         Box::new(left),
                         match token.token_type {
@@ -323,49 +370,51 @@ impl AstParser {
             }
         }
 
-        left
+        Ok(left)
     }
 
-    fn parse_primary(&mut self) -> Expression {
+    fn parse_primary(&mut self) -> Result<Expression, AstError> {
         if let Some(token) = self.peek().cloned() {
             match &token.token_type {
                 TokenType::Integer(value) => {
                     self.consume();
-                    Expression::Integer(*value)
+                    Ok(Expression::Integer(*value))
                 }
                 TokenType::Identifier(name) => {
                     self.consume();
-                    Expression::Variable(name.to_string())
+                    Ok(Expression::Variable(name.to_string()))
                 }
                 TokenType::OpenParen => {
                     self.consume();
-                    let expr = self.parse_expression();
+                    let expr = self.parse_expression()?;
                     if let Some(token) = self.peek() {
                         if matches!(token.token_type, TokenType::CloseParen) {
                             self.consume();
-                            Expression::ParenthesisExpression(Box::new(expr))
+                            Ok(Expression::ParenthesisExpression(Box::new(expr)))
                         } else {
-                            panic!("Expected closing parenthesis");
+                            return Err(AstError::ExpectedClosingParenthesis);
                         }
                     } else {
-                        panic!("Expected closing parenthesis");
+                        return Err(AstError::BadIfStatement);
                     }
                 }
-                _ => panic!("Unexpected token in expression"),
+                _ => return Err(AstError::UnexpectedToken(token.token_type)),
             }
         } else {
-            panic!("Expected an expression");
+            return Err(AstError::ExpectedExpression);
         }
     }
 
-    fn expect_bang(&mut self) {
+    fn expect_bang(&mut self) -> Result<(), AstError> {
         if self
             .peek()
             .map_or(true, |token| token.token_type != TokenType::Bang)
         {
-            panic!("Expected bang (!)");
+            return Err(AstError::ExpectedBang);
         }
         self.consume();
+
+        Ok(())
     }
 }
 
