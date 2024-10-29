@@ -18,7 +18,7 @@ impl Transpiler {
         Self {}
     }
 
-    pub fn compile(&self, ast: Ast) -> String {
+    pub fn transpile(&self, ast: Ast) -> String {
         let mut code = String::new();
 
         for statement in ast.statements {
