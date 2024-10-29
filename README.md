@@ -5,7 +5,7 @@ Very revolutionary features!! as well check examples to be amazed (rip there is 
 
 ## Example fibonacci program
 Trunk++:
-```
+```js
 var a = 0!
 var b = 1!
 var n = 0!
@@ -26,7 +26,7 @@ loop {
 
 
 C:
-```
+```c
 #include <stdio.h>
 
 int main(){
